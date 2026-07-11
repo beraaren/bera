@@ -1,0 +1,37 @@
+# Sanal ortamlar / geçici bağımlılıklar
+.venv/
+.pydeps/
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.pytest_cache/
+
+# Çıktılar ve loglar
+outputs/*
+!outputs/.gitkeep
+logs/*
+!logs/.gitkeep
+
+# Model ağırlıkları
+*.gguf
+*.onnx
+*.pt
+*.pth
+models/
+checkpoints/
+gpucore.*
+
+# Çevre değişkenleri / secretlar
+.env
+
+# IDE / editör
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistem dosyaları
+.DS_Store
+Thumbs.db

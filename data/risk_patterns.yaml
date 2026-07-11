@@ -1,0 +1,77 @@
+# Risk Pattern Deposu
+# Her pattern, scene graph / olay sinyalleriyle eşleştirildiğinde risk skoru üretir.
+
+patterns:
+  forklift_tip_over:
+    description: "Forkliftin yan yatması veya tekerleklerinin yerden kesilmesi."
+    risk_score: 95
+    risk_level: "Yüksek"
+    indicators:
+      - "forklift bbox en/boy oranı anormal"
+      - "forklift açısı > 20°"
+    required_nodes: ["forklift"]
+
+  person_fall:
+    description: "Personelin ani düşüşü."
+    risk_score: 90
+    risk_level: "Yüksek"
+    indicators:
+      - "insan merkezi dikeyde ani düşüş"
+      - "hız vektörü yukarıdan aşağıya değişim"
+    required_nodes: ["insan"]
+
+  gathering:
+    description: "Üç veya daha fazla personelin tehlikeli bölgede toplanması."
+    risk_score: 50
+    risk_level: "Orta"
+    indicators:
+      - "≥3 insan merkezi arası mesafe < eşik"
+    required_nodes: ["insan", "insan", "insan"]
+
+  immobile_person:
+    description: "Personel uzun süre hareketsiz kalması."
+    risk_score: 70
+    risk_level: "Orta"
+    indicators:
+      - "insan merkezi 2.5 sn'den fazla sabit"
+    required_nodes: ["insan"]
+
+  ppe_missing:
+    description: "Baret veya yelek gibi kişisel koruyucu donanım eksikliği."
+    risk_score: 45
+    risk_level: "Orta"
+    indicators:
+      - "insan yakınında baret/yelek tespit edilmedi"
+    required_nodes: ["insan"]
+
+  forklift_human_proximity:
+    description: "Forklift ile personel arasında tehlikeli yakınlık."
+    risk_score: 80
+    risk_level: "Yüksek"
+    indicators:
+      - "forklift ve insan merkezi arası mesafe < eşik"
+    required_nodes: ["forklift", "insan"]
+
+  fire_smoke:
+    description: "Yangın veya duman görülmesi."
+    risk_score: 100
+    risk_level: "Yüksek"
+    indicators:
+      - "VLM tarafından yangın/duman tespiti"
+    required_nodes: []
+
+  leakage:
+    description: "Sıvı/sızıntı birikintisi."
+    risk_score: 60
+    risk_level: "Orta"
+    indicators:
+      - "VLM tarafından sızıntı tespiti"
+    required_nodes: []
+
+  pallet_collapse:
+    description: "Palet yükünün devrilmesi veya çökmesi."
+    risk_score: 75
+    risk_level: "Yüksek"
+    indicators:
+      - "palet yüksekte veya eğik"
+    required_nodes: ["palet"]

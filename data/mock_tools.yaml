@@ -1,0 +1,42 @@
+# Mock Tool Tanımları
+# Karar ajanı bu araçları "çağırma" talimatı verebilir; gerçek entegrasyon
+# sonradan webhook / API ile değiştirilebilir.
+
+tools:
+  call_health_team:
+    description: "Sağlık ekibini olay konumuna çağır."
+    params:
+      location: "string"
+      urgency: "Yüksek | Orta | Düşük"
+      reason: "string"
+    enabled: true
+
+  secure_area:
+    description: "Tehlikeli bölgeyi güvenlik altına al."
+    params:
+      location: "string"
+      radius_meters: "number"
+      reason: "string"
+    enabled: true
+
+  record_incident:
+    description: "Olayı İSG kayıt sistemine ekle."
+    params:
+      incident_type: "string"
+      timestamp: "string"
+      description: "string"
+    enabled: true
+
+  notify_supervisor:
+    description: "Alan sorumlusunu bilgilendir."
+    params:
+      supervisor_id: "string"
+      message: "string"
+    enabled: true
+
+  stop_forklift:
+    description: "Forklifti uzaktan durdur (opsiyonel IoT entegrasyonu)."
+    params:
+      forklift_id: "string"
+      reason: "string"
+    enabled: false

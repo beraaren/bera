@@ -1,0 +1,180 @@
+# TEKNOFEST 2026 Senaryo 3 — Video Analiz ve Karar Destek Sistemi
+# Tüm eşikler, model yolları ve senaryo ayarları merkezi olarak buradan yönetilir.
+
+project:
+  name: "TEKNOFEST 2026 Senaryo 3 — İSG Video Analiz Ajanı"
+  version: "2.0.0"
+  language: "tr"
+  output_dir: "outputs"
+  log_dir: "logs"
+
+# ---------------------------------------------------------------------------
+# Video Ön İşleme
+# ---------------------------------------------------------------------------
+preprocessing:
+  target_frame_count: 8           # VLM'e gönderilecek kare sayısı
+  grid_columns: 4                 # Grid görüntüsü sütun sayısı
+  frame_width: 384                # Tek kare genişliği
+  frame_height: 216               # Tek kare yüksekliği
+  use_smart_sampling: true        # SSIM + Laplacian ile akıllı örnekleme
+  ssim_threshold: 0.92            # Bu eşiğin üzerindeki tekrarlı kareler atılır
+  min_laplacian_variance: 80.0    # Bulanık kare filtresi (düşük = daha katı)
+  enhance_low_light: true         # CLAHE/gamma düzeltme
+  clahe_clip_limit: 2.0
+  clahe_grid_size: [8, 8]
+
+# ---------------------------------------------------------------------------
+# Algı (Perception)
+# ---------------------------------------------------------------------------
+perception:
+  detector_backend: "ultralytics"      # "ultralytics" | "grounding_dino"
+  yolo_model: "yolov8n.pt"             # COCO önceden eğitilmiş veya kendi ağırlığınız
+  custom_classes:                      # TEKNOFEST özel sınıfları (kendi modelinizde varsa)
+    - forklift
+    - insan
+    - palet
+    - baret
+    - yelek
+  confidence_threshold: 0.35
+  tracker: "bytetrack"                 # "bytetrack" | "botsort"
+  tracker_persist: true
+
+# ---------------------------------------------------------------------------
+# Olay Tespit Motoru
+# ---------------------------------------------------------------------------
+events:
+  enabled_rules:
+    - tip_over
+    - fall
+    - gathering
+    - immobility
+    - ppe_missing
+    - proximity
+    - fire_smoke
+    - leakage
+  thresholds:
+    tip_over:
+      aspect_ratio_min: 1.45        # w/h; forklift yandan görünümde düşük, devrilmede yüksek
+      aspect_ratio_max: 4.0
+      min_duration_frames: 3
+    fall:
+      vertical_drop_pixels: 60
+      speed_drop_ratio: 0.5
+    gathering:
+      min_persons: 3
+      max_inter_center_distance: 120  # piksel
+      min_duration_frames: 10
+    immobility:
+      stationary_threshold_pixels: 15
+      min_duration_seconds: 2.5
+    ppe_missing:
+      classes: ["baret", "yelek"]
+      proximity_threshold_pixels: 80
+    proximity:
+      dangerous_pairs:
+        - ["forklift", "insan"]
+      distance_threshold_pixels: 100
+    fire_smoke:
+      enabled: false                # VLM tabanlı placeholder
+    leakage:
+      enabled: false                # VLM tabanlı placeholder
+
+# ---------------------------------------------------------------------------
+# VLM Backend (vLLM öncelikli, llama.cpp/transformators fallback)
+# ---------------------------------------------------------------------------
+vlm:
+  default_backend: "auto"         # "auto" | "vllm" | "llama_cpp" | "transformers"
+  auto_preference: ["vllm", "llama_cpp", "transformers"]
+
+  # vLLM ayarları
+  vllm:
+    model: "Qwen/Qwen2.5-VL-7B-Instruct"
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.85
+    max_model_len: 8192
+    dtype: "auto"
+    trust_remote_code: true
+    max_new_tokens: 1024
+    temperature: 0.15
+    top_p: 0.9
+    repetition_penalty: 1.1
+
+  # llama.cpp ayarları
+  llama_cpp:
+    model_repo: "mradermacher/TimeLens-7B-i1-GGUF"
+    model_file: "TimeLens-7B.i1-Q4_K_M.gguf"
+    mmproj_repo: "mradermacher/TimeLens-7B-GGUF"
+    mmproj_file: "TimeLens-7B.mmproj-f16.gguf"
+    n_ctx: 16384
+    n_gpu_layers: -1
+    temperature: 0.15
+    max_tokens: 800
+    top_p: 0.9
+    repeat_penalty: 1.15
+
+  # Transformers / ROCm ayarları
+  transformers:
+    model: "llava-hf/LLaVA-NeXT-Video-7B-hf"
+    torch_dtype: "bfloat16"
+    attn_implementation: "eager"
+    max_new_tokens: 1024
+    repetition_penalty: 1.15
+
+# ---------------------------------------------------------------------------
+# Karar Ajanı & Prompt
+# ---------------------------------------------------------------------------
+decision_agent:
+  system_prompt: |
+    Sen gelişmiş bir İş Sağlığı ve Güvenliği (İSG) yapay zeka analiz uzmanısın.
+    Sana verilen video kareleri, algı katmanının tespit ettiği nesneler/ilişkiler (scene graph),
+    geometrik olay sinyalleri ve risk kataloğu bilgileri eşlik ediyor.
+
+    Görevin:
+    1. Videodaki iş kazalarını, forklift veya iş makinelerinin devrilmesini,
+       malzemelerin/yapıların çökmesini, düşmeleri, sızıntıları, yangın/dumanı ve diğer
+       tehlikeli durumları tespit et.
+    2. Her olayı zaman damgasıyla birlikte detaylandır.
+    3. Genel video özetini Türkçe olarak yaz.
+    4. Risk seviyesini belirle (Düşük / Orta / Yüksek).
+    5. Alınması gereken acil ve uzun vadeli aksiyonları öner.
+    6. Geometrik sinyallerle VLM yorumun arasında çelişki varsa, bunu açıkça belirt.
+
+    Yanıtını SADECE aşağıdaki JSON şemasına uygun olarak ver. JSON dışında hiçbir açıklama ekleme.
+
+  include_scene_graph: true
+  include_event_signals: true
+  include_rag_context: true
+
+# ---------------------------------------------------------------------------
+# Guardrail & Çıktı
+# ---------------------------------------------------------------------------
+output:
+  output_schema:
+    summary: "string"
+    events:
+      - time: "string (MM:SS)"
+        event: "string"
+        event_type: "string"
+        confidence: "float 0-1"
+    risk: "Düşük | Orta | Yüksek"
+    actions:
+      - "string"
+    reasoning: "string"
+    confidence: "float 0-1"
+    triggered_mock_tools:
+      - tool_name: "string"
+        params: "object"
+  guardrail:
+    max_retries: 3
+    temperatures: [0.15, 0.10, 0.05]
+    enable_semantic_check: true
+    null_response: "Bilmiyorum"
+
+# ---------------------------------------------------------------------------
+# Performans & Ölçümleme
+# ---------------------------------------------------------------------------
+metrics:
+  enabled: true
+  log_inference_time: true
+  log_memory_usage: true
+  output_json: "outputs/metrics.json"

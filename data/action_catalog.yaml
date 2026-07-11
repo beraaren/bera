@@ -1,0 +1,39 @@
+# Aksiyon Kataloğu
+# Risk seviyesi + olay tipi kombinasyonuna göre önerilen aksiyonlar.
+
+actions:
+  Yüksek:
+    default:
+      - "Acil durum ekibini ve sağlık personelini derhal çağır."
+      - "Olay bölgesini güvenlik şeridi ile izole et."
+      - "Güvenlik kameralarını ve kayıtları sakla, yetkililere bildir."
+      - "Benzer kazaları önlemek için risk değerlendirmesi yap."
+    forklift_tip_over:
+      - "Forklift operatörünün durumunu kontrol et, ilk yardım sağla."
+      - "Yangın/sızıntı riskine karşı çevreyi kontrol et."
+    person_fall:
+      - "Yaralıyı hareket ettirmeden sağlık ekibini bekle."
+      - "Düşme nedenini (kaygan zemin, engel) tespit et."
+    forklift_human_proximity:
+      - "Forklift operatörünü acil durdur."
+      - "Yaya trafiğini alternatif güzergaha yönlendir."
+
+  Orta:
+    default:
+      - "Alan sorumlusunu bilgilendir."
+      - "Durumu güvenlik kayıtlarına ekle."
+      - "Önleyici tedbirleri gözden geçir."
+    ppe_missing:
+      - "İlgili personele KKD kullanımı konusunda uyarı ver."
+      - "Eğitim programını güncelle."
+    gathering:
+      - "Toplanma bölgesindeki personeli dağıt."
+      - "Bölgedeki tehlikeli hareketleri durdur."
+    immobile_person:
+      - "Kişinin bilincini kontrol et, sağlık ekibine haber ver."
+      - "Yakınında güvenli alan oluştur."
+
+  Düşük:
+    default:
+      - "Durumu rutin kontrol listesine kaydet."
+      - "Gerekirse gözetim altında çalışmaya devam et."
